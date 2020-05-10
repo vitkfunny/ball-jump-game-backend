@@ -1,0 +1,18 @@
+steps:
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args: [ '-c', 'gcloud secrets versions access latest --secret=firebase_key > firebase.json']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend:$BUILD_ID', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/backend']
+- name: "gcr.io/cloud-builders/gcloud"
+  args: [
+    'beta', 'run', 'deploy', 'backend-develop',
+    '--image', 'gcr.io/$PROJECT_ID/backend:$BUILD_ID',
+    '--region', 'europe-west1',
+    '--allow-unauthenticated',
+    '--platform', 'managed'
+  ]
+images:
+- gcr.io/$PROJECT_ID/backend
