@@ -44,13 +44,14 @@ def save():
         if user_d['device_id'] == data['device_id']:
             if user_d['score'] < data['score']:
                 user_ref.set(user_dict(data))
+                return 'Update user score', 200
             else:
                 return 'Skip lower score', 200
         else:
             return 'Different device ID', 403
     else:
         user_ref.set(user_dict(data))
-    return 'OK', 200
+        return 'Save new user', 200
 
 
 @app.route('/top', methods=['GET'])
