@@ -1,7 +1,8 @@
 import hashlib
-import json
+import logging
 import os
 
+import google.cloud.logging
 from firebase_admin import credentials, firestore, initialize_app
 from flask import Flask, request, jsonify
 
@@ -17,6 +18,11 @@ def user_dict(data):
         'score': int(data['score'])
     }
 
+
+# Initialize Cloud Logging
+cloud_logging = google.cloud.logging.Client()
+cloud_logging.get_default_handler()
+cloud_logging.setup_logging(log_level=logging.DEBUG)
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -36,21 +42,25 @@ def root():
 @app.route('/save', methods=['POST', 'PUT'])
 def save():
     data = request.get_json(force=True)
-    print('Received SAVE data: {}'.format(data))
+    logging.debug('Received SAVE data: {}'.format(data))
     user_ref = collection.document(user_id(data))
     user = user_ref.get()
     if user.exists:
         user_d = user.to_dict()
+        logging.debug('User exists. Current device id: {}. New device id: {}'.format(
+            user_d['device_id'], data['device_id']
+        ))
         if user_d['device_id'] == data['device_id']:
             if user_d['score'] < data['score']:
                 user_ref.set(user_dict(data))
+                return 'Update user score', 200
             else:
                 return 'Skip lower score', 200
         else:
             return 'Different device ID', 403
     else:
         user_ref.set(user_dict(data))
-    return 'OK', 200
+        return 'Save new user', 200
 
 
 @app.route('/top', methods=['GET'])
